@@ -81,8 +81,8 @@ __location_tag:
 	/* R5 will state if booting as bios or 2nd boot stage */
 	mov_imm	r5, DRAM_START
 	cmp	r5, pc
-	movlt	r5, #0		/* Boot with secure state */
-	movge	r5, #1		/* Boot with non-secure state */
+	movls	r5, #0		/* Boot with secure state */
+	movhi	r5, #1		/* Boot with non-secure state */
 
 	/* Jump to new location in RAM */
 	ldr	ip, =new_loc

@@ -29,6 +29,8 @@
 #define PLATFORM_CONFIG_H
 
 #define PLATFORM_FLAVOR_ID_virt		0
+#define PLATFORM_FLAVOR_ID_vexpress		1
+
 #define PLATFORM_FLAVOR_IS(flav) \
         (PLATFORM_FLAVOR == PLATFORM_FLAVOR_ID_ ## flav)
 
@@ -45,6 +47,15 @@
 #define UART0_BASE		0x09000000
 #define UART1_BASE		0x09040000
 
+#elif PLATFORM_FLAVOR_IS(vexpress)
+
+#define SECURE_RAM_START	0x14000000
+#define SECURE_RAM_SIZE		0x02000000
+
+#define DRAM_START		0x80000000
+
+#define UART0_BASE		0x1c090000
+#define UART1_BASE		0x1c0a0000
 
 #else
 #error "Unknown platform flavor"

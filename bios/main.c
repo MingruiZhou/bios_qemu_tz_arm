@@ -109,6 +109,7 @@ static void check(const char *expr, const char *file, int line)
 	while (true);
 }
 
+#if PLATFORM_FLAVOR_IS(virt)
 static void *open_fdt(uint32_t dst)
 {
 	int r;
@@ -132,6 +133,7 @@ static uint32_t copy_dtb(uint32_t dst, uint32_t src)
 	CHECK(r < 0);
 	return dst + DTB_MAX_SIZE;
 }
+#endif
 
 static void copy_ns_images(void)
 {
@@ -142,14 +144,24 @@ static void copy_ns_images(void)
 	kernel_entry = DRAM_START + 32 * 1024 * 1024;
 
 	/* Copy non-secure image in place */
+	msg("Loading zImage at 0x%x\n", kernel_entry);
 	r = semihosting_download_file("zImage", 64 * 1024 * 1024, kernel_entry);
 	CHECK(r < 0);
 	dst = kernel_entry + r;
 
 	dtb_addr = ROUNDUP(dst, PAGE_SIZE) + 96 * 1024 * 1024; /* safe spot */
+#if PLATFORM_FLAVOR_IS(virt)
+	msg("Copying dtb from 0x%x to 0x%x\n", DTB_START, dtb_addr);
 	dst = copy_dtb(dtb_addr, DTB_START);
+#else
+	msg("Loading dtb at 0x%x\n", dtb_addr);
+	r = semihosting_download_file("boot.dtb", DTB_MAX_SIZE, dtb_addr);
+	CHECK(r < 0);
+	dst = dtb_addr + r;
+#endif
 
 	rootfs_start = ROUNDUP(dst, PAGE_SIZE);
+	msg("Loading initrd at 0x%x\n", rootfs_start);
 	r = semihosting_download_file("rootfs.cpio.gz", 32 * 1024 * 1024,
 				      rootfs_start);
 	CHECK(r < 0);
@@ -232,22 +244,28 @@ static void copy_secure_images(struct sec_entry_arg *arg)
 		CHECK(r < 0);
 		arg->paged_part = dst;
 	}
+
+	msg("secure entry: %x, paged_part: %x\n", arg->entry, arg->paged_part);
 }
 
 /* called from assembly only */
 void main_init(struct sec_entry_arg *arg, int secure);
 void main_init(struct sec_entry_arg *arg, int secure)
 {
+
+#if PLATFORM_FLAVOR_IS(virt)
 	void *fdt;
 	int r;
+#endif
 
 	msg_init();
 
+#if PLATFORM_FLAVOR_IS(virt)
 	/* Find DTB */
 	fdt = open_fdt(DTB_START);
 	r = fdt_pack(fdt);
 	CHECK(r < 0);
-
+#endif
 	/* Act as a secure bootload only if caller comes for Qemu bootram */
 	if (secure)
 		copy_secure_images(arg);
@@ -258,6 +276,8 @@ void main_init(struct sec_entry_arg *arg, int secure)
 
 	if (secure)
 		msg("Initializing secure world\n");
+	else
+		msg("Initializing NON-secure world\n");
 }
 
 static void setprop_cell(void *fdt, const char *node_path,

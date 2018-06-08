@@ -4,6 +4,7 @@ include mk/gcc.mk
 
 PLATFORM_FLAVOR ?= vexpress
 
+BIOS_ROOT_DEVICE = root=/dev/mmcblk0 rw
 BIOS_COMMAND_LINE = console=ttyAMA0,115200 \
 		    earlyprintk=serial,ttyAMA0,115200 \
 		    dynamic_debug.verbose=1 \
